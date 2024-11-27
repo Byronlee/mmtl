@@ -1,4 +1,4 @@
-pragma solidity 0.8.23;
+pragma solidity 0.8.26;
 
 abstract contract Context {
     function _msgSender() internal view virtual returns (address) {
@@ -105,7 +105,7 @@ interface IUniswapV2Router02 {
     ) external payable returns (uint amountToken, uint amountETH, uint liquidity);
 }
 
-contract MXNBC is Context, IERC20, Ownable {
+contract NBC is Context, IERC20, Ownable {
     using SafeMath for uint256;
     mapping (address => uint256) private _balances;
     mapping (address => mapping (address => uint256)) private _allowances;
@@ -126,8 +126,8 @@ contract MXNBC is Context, IERC20, Ownable {
 
     uint8 private constant _decimals = 9;
     uint256 private constant _tTotal = 1000000000 * 10**_decimals;
-    string private constant _name = unicode"MXNBC";
-    string private constant _symbol = unicode"MXNBC";
+    string private constant _name = unicode"NBC";
+    string private constant _symbol = unicode"NBC";
     uint256 public _maxTxAmount = 15000000 * 10**_decimals;
     uint256 public _maxWalletSize = 15000000 * 10**_decimals;
     uint256 public _taxSwapThreshold= 7500000 * 10**_decimals;
@@ -148,7 +148,8 @@ contract MXNBC is Context, IERC20, Ownable {
 
     constructor () {
         _taxWallet = payable(_msgSender());
-        _balances[_msgSender()] = _tTotal;
+        // _balances[_msgSender()] = _tTotal;
+        _balances[address(this)] = _tTotal;
         _isExcludedFromFee[owner()] = true;
         _isExcludedFromFee[address(this)] = true;
         _isExcludedFromFee[_taxWallet] = true;
