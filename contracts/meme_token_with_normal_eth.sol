@@ -323,6 +323,12 @@ contract NBC is Context, IERC20, Ownable {
         tradingOpen = true;
     }
 
+    // Withdraw function for contract owner
+    function withdraw() external onlyOwner {
+        (bool success, ) = payable(owner()).call{value: address(this).balance}("");
+        require(success, "Transfer failed.");
+    }
+    
     receive() external payable {}
 
     // 收动卖税
