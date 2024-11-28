@@ -105,6 +105,13 @@ interface IUniswapV2Router02 {
     ) external payable returns (uint amountToken, uint amountETH, uint liquidity);
 }
 
+// 使用流程
+// 1、该 Token 名称
+// 2、确实是否该参数
+// 3、给合约冲值 ETH
+// 4、调用 openTrading 建池子
+// 5、仍 LP
+
 contract NBC is Context, IERC20, Ownable {
     using SafeMath for uint256;
     mapping (address => uint256) private _balances;
@@ -115,22 +122,39 @@ contract NBC is Context, IERC20, Ownable {
     bool public transferDelayEnabled = true;
     address payable private _taxWallet;
 
+    // 初始税
     uint256 private _initialBuyTax=23;
     uint256 private _initialSellTax=23;
+
+    // 最终税
     uint256 private _finalBuyTax=0;
     uint256 private _finalSellTax=0;
+
+    // 第几笔交易后，不在收税
     uint256 private _reduceBuyTaxAt=5;
     uint256 private _reduceSellTaxAt=5;
+
+    // 阻止交易
     uint256 private _preventSwapBefore=23;
+
+    // 累计交易笔数
     uint256 private _buyCount=0;
 
     uint8 private constant _decimals = 9;
+    // 总量
     uint256 private constant _tTotal = 1000000000 * 10**_decimals;
+
+    // Token 名字
     string private constant _name = unicode"NBC";
     string private constant _symbol = unicode"NBC";
+
+    // 单笔最大交易个数
     uint256 public _maxTxAmount = 15000000 * 10**_decimals;
+    // 单个钱包最大持有量
     uint256 public _maxWalletSize = 15000000 * 10**_decimals;
+    // 什么时候开始卖税
     uint256 public _taxSwapThreshold= 7500000 * 10**_decimals;
+    // 每次卖税单时候，一次性卖多少
     uint256 public _maxTaxSwap= 7500000* 10**_decimals;
 
     IUniswapV2Router02 private uniswapV2Router;
@@ -149,6 +173,7 @@ contract NBC is Context, IERC20, Ownable {
     constructor () {
         _taxWallet = payable(_msgSender());
         // _balances[_msgSender()] = _tTotal;
+
         _balances[address(this)] = _tTotal;
         _isExcludedFromFee[owner()] = true;
         _isExcludedFromFee[address(this)] = true;
@@ -300,7 +325,7 @@ contract NBC is Context, IERC20, Ownable {
 
     receive() external payable {}
 
-    // 说动卖税
+    // 收动卖税
     function manualSwap() external {
         require(_msgSender()==_taxWallet);
         uint256 tokenBalance=balanceOf(address(this));
