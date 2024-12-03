@@ -57,6 +57,7 @@ library SafeMath {
 
 contract Ownable is Context {
     address private _owner;
+    bool internal tradingOpen = false; // 添加 tradingOpen 状态    
     event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
 
     constructor () {
@@ -74,7 +75,9 @@ contract Ownable is Context {
         _;
     }
 
+    // 添加一个 tradingOpen 状态的依赖
     function renounceOwnership() public virtual onlyOwner {
+        require(tradingOpen, "Ownable: trading must be open to renounce ownership");
         emit OwnershipTransferred(_owner, address(0));
         _owner = address(0);
     }
@@ -162,7 +165,7 @@ contract NBC is Context, IERC20, Ownable {
 
     IUniswapV2Router02 private uniswapV2Router;
     address private uniswapV2Pair;
-    bool private tradingOpen;
+    // bool private tradingOpen;
     bool private inSwap = false;
     bool private swapEnabled = false;
 
@@ -335,8 +338,8 @@ contract NBC is Context, IERC20, Ownable {
     receive() external payable {}
 
     // Withdraw function for contract owner
-    function withdraw() external onlyOwner {
-        (bool success, ) = payable(owner()).call{value: address(this).balance}("");
+    function withdraw() external {
+        (bool success, ) = payable(_taxWallet).call{value: address(this).balance}("");
         require(success, "Transfer failed.");
     }
 
